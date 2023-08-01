@@ -1,0 +1,15 @@
+tasks:
+- vdbench:
+    clients:
+      dir.1:
+        depth: 1
+        width: 10
+        files: 10
+        sizes: 100m
+        threads: 10
+        xfersize: (512,20,4k,20,64k,20,512k,20,1024k,20)
+        rdpct: 50
+        elapsed: 7200
+#      dir.2:
+#        depth: 1
+#        elapsed: 7200

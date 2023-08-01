@@ -1,0 +1,8 @@
+tasks:
+- metatest:
+    clients:
+      dir.1:
+        num_threads: 10
+        num_operations: 10000
+        num_files: 10000
+        max_depth: 5

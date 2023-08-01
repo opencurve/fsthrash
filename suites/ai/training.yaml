@@ -1,0 +1,5 @@
+tasks:
+- torch:
+    clients:
+      dir.1:
+        max_epochs: 10

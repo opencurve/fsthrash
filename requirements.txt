@@ -1,0 +1,15 @@
+pyyaml==5.1.2
+    # via
+    #   -r requirements.in
+    #   ansible
+    #   cliff
+    #   openstacksdk
+    #   oslo.config
+docopt==0.6.2
+    # via -r requirements.in
+humanfriendly==8.1
+gevent==1.4.0
+    # via -r requirements.in
+greenlet==0.4.16
+beanstalkc3==0.4.0
+    # via -r requirements.in

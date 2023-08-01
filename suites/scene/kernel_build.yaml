@@ -1,0 +1,5 @@
+tasks:
+- tasktest:
+    clients:
+      dir.1:
+        - suites/kernel_untar_build.sh

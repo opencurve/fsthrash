@@ -1,0 +1,109 @@
+#!/bin/bash
+set -e
+export LC_ALL=C
+if [ $# -eq 0 ]; then
+  install=false
+else
+  if [ "$1" = "install" ]; then
+      install=true
+  else
+      echo "Invalid command, supported commands are: 'install'"
+      exit 1
+  fi
+fi
+
+PYTHON=${PYTHON:-"python2"}
+VENV=${VENV:-"virtualenv"}
+
+case "$(uname -s)" in
+Linux)
+    case "$(lsb_release --id --short)" in
+    Ubuntu|Debian|LinuxMint)
+        # Ensure setuptools is installed
+        deps=(beanstalkd virtualenv)
+        for package in ${deps[@]}; do
+            if [ "$(dpkg --status -- $package|sed -n 's/^Status: //p')" != "install ok installed" ]; then
+                missing="${missing:+$missing }$package"
+            fi
+        done
+        if [ -n "$missing" ]; then
+            echo "$0: missing required packages:" 1>&2
+            echo "$missing"
+            if [ "$install" = true ]; then
+                echo "Installing missing packages..."
+                sudo apt-get -y install $missing
+            else
+                echo "Please install missing packages or run './bootstrap install' if you have sudo"
+                echo "sudo apt-get -y install $missing"
+                exit 1
+            fi
+        fi
+        ;;
+    RedHatEnterpriseWorkstation|RedHatEnterpriseServer|RedHatEnterprise|CentOS)
+        deps=(beanstalkd virtualenv)
+        for package in ${deps[@]}; do
+          if [ "$(rpm -q $package)" == "package $package is not installed" ]; then
+              missing="${missing:+$missing }$package"
+          fi
+        done
+        if [ -n "$missing" ]; then
+            echo "$0: missing required packages:" 1>&2
+            echo "$missing"
+            if [ "$install" = true ]; then
+                echo "Installing missing packages..."
+                sudo yum -y install $missing
+            else
+                echo "Please install missing packages or run './bootstrap install' if you have sudo"
+                echo "sudo yum -y install $missing"
+                exit 1
+            fi
+        fi
+        ;;
+    *)
+        echo "This script does not support your Linux distribution yet. Patches encouraged!"
+        exit 1
+        ;;
+    esac
+    ;;
+*)
+    echo "This script does not support your OS yet. Patches encouraged!"
+    exit 1
+    ;;
+esac
+
+# Forcibly remove old virtualenvs which used system site-packages
+if [ -e ./$VENV ]  && [ ! -e ./$VENV/lib/python*/no-global-site-packages.txt ]; then
+    echo "Removing old virtualenv because it uses system site-packages"
+    rm -rf ./$VENV
+fi
+
+if [ -z "$NO_CLOBBER" ] || [ ! -e ./$VENV ]; then
+    if ! which virtualenv > /dev/null; then
+        pip install virtualenv
+    fi
+    virtualenv --python=$PYTHON $VENV
+fi
+
+# be compatible with pip shipped by distro older v20.2
+if ./$VENV/bin/pip --use-feature=2020-resolver >/dev/null 2>&1 ; then
+    PIP_INSTALL="./$VENV/bin/pip install --use-feature=2020-resolver"
+else
+    PIP_INSTALL="./$VENV/bin/pip install"
+fi
+# Upgrade pip first - then we have a new pip version with the --use-feature flag
+$PIP_INSTALL --upgrade pip
+
+# Ensure setuptools is installed
+./$VENV/bin/pip install --use-feature=2020-resolver setuptools --upgrade
+
+# Install all requirements
+./$VENV/bin/pip install --use-feature=2020-resolver --upgrade -r requirements.txt
+
+# Check to make sure requirements are met
+./$VENV/bin/pip check
+
+
+find thrash -name '*.pyc' -exec rm {} \;
+
+# Install fsthrash
+./$VENV/bin/python setup.py develop
